@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta Charset = 'utf-8'>
+        <title>
+            Dictionary
+        </title> 
+    </head>
+    <style>
+        body {
+            background: #57b4f3;
+            text-align: center;
+            padding: 5px;
+        }
+        b {
+            font-size: 2pc;
+            font-family: 'Courier New', Courier, monospace;
+            border: none;
+        }
+        div {
+            font-size: 1pc;
+            font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+        p {
+            border: solid;
+            padding: 20px;
+            width: 50%;
+            margin-left: 25%;
+        }
+        input {
+            background-color:#dfdfdf80;
+            border-radius: 10px;
+            padding: 5px;
+        }
+        button {
+            border-radius: 10px;
+            padding: 5px;
+            background-color:#dfdfdf80;
+        }
+        .word {
+            background-color:#dfdfdf80;
+            padding: 10px;
+            margin: 10px;
+        }
+    </style>
+    <body>
+
+        <input type="text" id="word" spellcheck=false >
+        <button id="searchButton">go!</button>
+        <div id="result"></div>
+
+        <script src = "data.js"></script>
+        <script type = "module">
+        
+        /**
+            If you are using data.js instead of data2.js,
+            switch mode to 1
+
+            mode 1 will give less results but better defenitions,
+            mode 2 will give more results but worse defenitions.
+
+        **/
+        var mode = 1;
+        var showDef = true;
+
+        var words = [];
+
+        function ToArray(str){
+            var arr = [];
+            for(var i = 0; i < str.length; i++){
+                arr.push(i);
+            }
+            return arr;
+        }
+        function ToString(arr, word){
+            var str = "";
+            for(var i = 0; i < arr.length; i++){
+                str+=word[arr[i]];
+            }
+            return str;
+        }
+        function notNum(nums, word){
+            
+            var possible = ToArray(word);
+            for(var j = 0; j < nums.length; j++){
+                var n = nums[j];
+                for(var i = 0; i < possible.length; i++){
+                    if(possible[i] === n){
+                        possible.splice(i, 1);
+                    }
+                }
+            }
+            if(possible.length){
+                return possible;
+            }
+            return [];
+            
+        }
+        function Delete(){
+            return [];
+        }
+        function check(word){
+            var used = false;
+            for(var w = 0; w < words.length; w++){
+                if(words[w].w === word){
+                    used = true;
+                    break;
+                }
+            }
+            return used;
+        }
+
+        const searchButton = document.getElementById("searchButton");
+
+        searchButton.addEventListener("click", function(){
+            
+            var word = document.getElementById("word").value.toLowerCase();
+            const result = document.getElementById("result");
+
+            words = Delete();
+            if(word.length < 9){
+                var arr = ToArray(word);
+
+                var nums = [];
+                for(var i = 0; i < arr.length; i++){
+                    nums.push({
+                        used: [i],
+                        str: word[i]
+                    });
+                }
+
+                //scramble and find all the possiblities
+                var done = false;
+                while(!done && word.length !== 0){
+                    for(var i = nums.length-1; i >= 0; i--){
+                        
+                        //get all numbers that has not been used yet in this node
+                        var not = notNum(nums[i].used, word);
+
+                        //make a new node for every number
+                        for(var j = 0; j < not.length; j++){
+                            var used = [];
+                            for(var u = 0; u < nums[i].used.length; u++){
+                                used.push(nums[i].used[u]);
+                            }
+                            nums.push({
+                                used: used
+                            });
+                            nums[nums.length-1].used.push(not[j]);
+                            nums[nums.length-1].str = ToString(nums[nums.length-1].used, word);
+                        }
+                        if(not.length){
+                            //nums.splice(i, 1);
+                        }else{
+                            done = true;
+                        }
+                        
+                    }
+                }
+                
+                //give only real words
+                for(var i = 0; i < nums.length; i++){
+
+                    //add the word (if its real)
+                    if(dic[nums[i].str]){
+                        if(!check(nums[i].str)){
+                            words.push({w:nums[i].str,e:""});
+                        }
+                    }
+                    
+                    //add plural form (if its real)
+                    var w = nums[i].str.slice(0, nums[i].str.length-1);
+                    if(dic[w] && nums[i].str[nums[i].str.length-1] === "s"){
+                        if(!check(w)){
+                            words.push({w:w,e:"s"});
+                        }
+                    }
+
+                }
+
+                //display the words and definitions
+                var final = "<br>"+words.length+" results<br>";
+                for(var i = words.length-1; i >= 0; i--){
+                    if(showDef){
+                        final += "<div class='word'><b>"+words[i].w+words[i].e+":</b>";
+                        if(mode === 1){
+                            for(var j = 0; j < dic[words[i].w].length; j++){
+                                final+="<p>"+dic[words[i].w][j]+"</p>";
+                            }
+                        }else{
+                            final+="<p>"+dic[words[i].w]+"</p>";
+                        }
+                    }else{
+                        final += "<div class='word'><b>"+words[i].w+words[i].e+"</b>";
+                    }
+                    final+="</div>";
+                }
+                result.innerHTML=final;
+                
+            }else{
+
+                //display the words and definitions
+                var final = "<br>Your word was too long to unscramble.<br>";
+                if(dic[word]){
+                    final += "<div class='word'><b>"+word+":</b>";
+                    if(mode === 1){
+                        for(var j = 0; j < dic[word].length; j++){
+                            final+="<p>"+dic[word][j]+"</p>";
+                        }
+                    }else{
+                        final+="<p>"+dic[word]+"</p>";
+                    }
+                    final+="</div>";
+                }
+                result.innerHTML=final;
+
+            }
+
+        });
+
+        </script>
+
+    </body>
+</html>
